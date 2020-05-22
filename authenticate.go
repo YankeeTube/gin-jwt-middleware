@@ -9,7 +9,7 @@ import (
 )
 
 func TokenAuthMiddleware(c *gin.Context) {
-	publicKey := c.MustGet("PRIVKEY")
+	privateKey := c.MustGet("PRIVKEY")
 	token, err := c.Request.Cookie("access-token")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -33,7 +33,7 @@ func TokenAuthMiddleware(c *gin.Context) {
 	claims := &jwt.MapClaims{}
 
 	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return publicKey, nil
+		return privateKey, nil
 	})
 	fmt.Println(err)
 
