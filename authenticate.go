@@ -9,7 +9,7 @@ import (
 )
 
 func TokenAuthMiddleware(c *gin.Context) {
-	privateKey := c.MustGet("PRIVKEY")
+	privateKey := c.MustGet("PRIVKEY").(*rsa.PrivateKey)
 	token, err := c.Request.Cookie("access-token")
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -33,7 +33,7 @@ func TokenAuthMiddleware(c *gin.Context) {
 	claims := &jwt.MapClaims{}
 
 	_, err = jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return privateKey, nil
+		return &privateKey.PublicKey, nil
 	})
 	fmt.Println(err)
 
@@ -41,24 +41,28 @@ func TokenAuthMiddleware(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": "Invalid Signature",
+			"error":   err,
 		})
 		c.Abort()
 	} else if v, _ := err.(*jwt.ValidationError); v != nil && v.Errors == jwt.ValidationErrorExpired {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": "Token is Expired",
+			"error":   err,
 		})
 		c.Abort()
 	} else if err != nil && err.Error() == rsa.ErrVerification.Error() {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": "Verification failed",
+			"error":   err,
 		})
 		c.Abort()
 	} else if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"code":    http.StatusUnauthorized,
 			"message": "Authentication failed",
+			"error":   err,
 		})
 		c.Abort()
 	} else {
